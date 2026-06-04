@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Espejo Consciente</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Courier+Prime:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;background:#0A0A0A;}
+body{font-family:'Courier Prime',Courier,monospace;color:#F5F5F5;}
+.ec-root{background:#0A0A0A;min-height:100vh;display:flex;flex-direction:column;}
+
+/* WELCOME */
+#welcome{background:#0A0A0A;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:2rem;text-align:center;}
+.ec-line{width:100%;max-width:480px;height:1px;background:#F5F5F5;margin:2.5rem 0;}
+.ec-tagline{font-size:20px;color:#F5F5F5;line-height:1.8;max-width:420px;letter-spacing:0.01em;}
+.ec-enter{margin-top:3rem;border:1px solid #F5F5F5;background:transparent;color:#F5F5F5;font-family:'Courier Prime',Courier,monospace;font-size:14px;padding:14px 32px;cursor:pointer;letter-spacing:0.1em;border-radius:0;transition:background 0.2s,color 0.2s;}
+.ec-enter:hover{background:#F5F5F5;color:#0A0A0A;}
+
+/* CHAT */
+#chatview{display:none;flex-direction:column;min-height:100vh;background:#0A0A0A;}
+.ec-header{padding:1.25rem 1.5rem;border-bottom:1px solid #1a1a1a;font-size:12px;letter-spacing:0.2em;color:#9E2A2A;}
+.ec-messages{flex:1;padding:2rem 1.5rem;display:flex;flex-direction:column;gap:2rem;overflow-y:auto;}
+.ec-msg-bot{text-align:left;}
+.ec-text{font-size:15px;color:#F5F5F5;line-height:1.9;white-space:pre-wrap;}
+.ec-msg-user{text-align:right;padding-left:3rem;}
+.ec-msg-user .ec-text{display:inline-block;font-size:15px;color:#CCCCCC;line-height:1.9;border-left:1px solid #9E2A2A;padding-left:12px;text-align:left;}
+.ec-layer-label{font-size:11px;letter-spacing:0.14em;margin-bottom:6px;margin-top:1.25rem;}
+.ec-layer-body{font-size:15px;line-height:1.9;color:#F5F5F5;}
+.proy-l{color:#9E2A2A;}
+.simb-l{color:#C45C1C;}
+.cuerp-l{color:#777;}
+.accion-l{color:#F5F5F5;font-weight:700;}
+.ec-typing{font-style:italic;color:#444;font-size:13px;padding:0.5rem 0;}
+.ec-closer{text-align:center;padding:1.5rem;border-top:1px solid #111;}
+.ec-closer span{font-style:italic;color:#333;font-size:13px;}
+.ec-input-row{padding:1.25rem 1.5rem;border-top:1px solid #1a1a1a;display:flex;gap:12px;align-items:flex-end;}
+.ec-input-row textarea{flex:1;background:transparent;border:none;border-bottom:1px solid #222;color:#F5F5F5;font-family:'Courier Prime',Courier,monospace;font-size:15px;padding:8px 0;resize:none;outline:none;line-height:1.6;min-height:38px;max-height:120px;transition:border-color 0.2s;}
+.ec-input-row textarea::placeholder{color:#2a2a2a;}
+.ec-input-row textarea:focus{border-bottom-color:#9E2A2A;}
+.ec-send{background:transparent;border:1px solid #222;color:#444;font-family:'Courier Prime',Courier,monospace;font-size:12px;padding:10px 18px;cursor:pointer;border-radius:0;letter-spacing:0.06em;transition:border-color 0.2s,color 0.2s;}
+.ec-send:hover{border-color:#9E2A2A;color:#9E2A2A;}
+.ec-send:disabled{opacity:0.2;cursor:not-allowed;}
+</style>
+</head>
+<body>
+<div class="ec-root" id="ecroot">
+
+  <div id="welcome">
+    <div class="ec-line"></div>
+    <p class="ec-tagline">No voy a decirte quién eres.<br>Voy a ayudarte a que tu cuerpo te cuente.</p>
+    <div class="ec-line"></div>
+    <button class="ec-enter" onclick="enterChat()">respirar y entrar</button>
+  </div>
+
+  <div id="chatview">
+    <div class="ec-header">espejo consciente</div>
+    <div class="ec-messages" id="msgs"></div>
+    <div class="ec-closer" id="closer" style="display:none">
+      <span>No me creas. Siéntelo.</span>
+    </div>
+    <div class="ec-input-row">
+      <textarea id="inp" placeholder="cuéntame qué sientes..." rows="1"></textarea>
+      <button class="ec-send" id="sendbtn" onclick="sendMsg()">enviar</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const API_KEY = 'COLOCA_TU_API_KEY_AQUI';
+
+const SYSTEM = `Eres un decodificador simbólico de tercera generación. Tu especialidad es leer la realidad como un espejo del inconsciente.
+
+Para cada consulta entrega SIEMPRE 4 capas en este orden exacto. Responde SOLO en texto plano con este formato:
+
+PROYECCIÓN
+[Una línea clara y directa.]
+
+SÍMBOLO
+[Símbolo clave + mensaje inconsciente. 1-2 líneas.]
+
+CUERPO
+[Sensación + emoción atrapada + mensaje del cuerpo entre comillas. 1-2 líneas.]
+
+ACCIÓN HOY
+[Una sola acción concreta. En menos de 5 minutos. Sin opciones. Sin tal vez.]
+
+REGLAS:
+- No des consejos genéricos de autoayuda.
+- No uses frases bonitas sin anclaje físico o simbólico.
+- Si no mencionó sensación corporal, infiere la más probable.
+- Lenguaje cálido pero quirúrgico. Sin rodeos.
+- No hagas preguntas al final. La acción es la última línea.
+- Responde SOLO las 4 capas. Nada más.
+
+TABLA DE PROYECCIÓN: Discusión=conflicto interno no resuelto. Ignoraron=miedo a no ser visto. Robaron=fronteras débiles. Elogiaron=cualidad propia no reconocida. Criticaron=juicio interno. Ghostearon=miedo al abandono. Traicionaron=deslealtad hacia uno mismo. Copiaron=miedo a ser único.
+
+TABLA DE SÍMBOLOS: Tropezar=exceso de impulso. Perder llaves=bloqueo para nueva etapa. Ver 11:11=alineación consciente-inconsciente. Romper vaso=límite emocional colapsó. Mariposa=transformación ya ocurrida. Agua sucia=emociones estancadas. Fuego=pasión o destrucción según control.
+
+TABLA BIOLÓGICO-EMOCIONAL: Nudo garganta=verdad no dicha. Opresión pecho=tristeza no llorada. Hombros duros=responsabilidad excesiva. Manos frías=bloqueo para dar/recibir. Zumbido oídos=algo que no quieres oír. Dolor lumbar=falta de soporte. Colitis=rabia contenida. Cansancio al despertar=procesamiento nocturno intenso.`;
+
+const history = [];
+const labels = {
+  'PROYECCIÓN': {sym:'🔍', cls:'proy-l'},
+  'SÍMBOLO': {sym:'◯', cls:'simb-l'},
+  'CUERPO': {sym:'◈', cls:'cuerp-l'},
+  'ACCIÓN HOY': {sym:'→', cls:'accion-l'}
+};
+
+const inp = document.getElementById('inp');
+const btn = document.getElementById('sendbtn');
+const msgs = document.getElementById('msgs');
+
+inp.addEventListener('input', () => {
+  inp.style.height = 'auto';
+  inp.style.height = Math.min(inp.scrollHeight, 120) + 'px';
+});
+inp.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMsg(); }
+});
+
+function enterChat() {
+  document.getElementById('welcome').style.display = 'none';
+  const cv = document.getElementById('chatview');
+  cv.style.display = 'flex';
+  setTimeout(() => typeIntro("Cuéntame qué pasó hoy, qué sientes en tu cuerpo, o qué situación te inquieta.\n\nLo leeré como el espejo que es."), 500);
+}
+
+function typeIntro(text) {
+  const wrap = document.createElement('div');
+  wrap.className = 'ec-msg-bot';
+  const span = document.createElement('div');
+  span.className = 'ec-text';
+  wrap.appendChild(span);
+  msgs.appendChild(wrap);
+  let i = 0;
+  function tick() {
+    if (i < text.length) {
+      span.textContent += text[i++];
+      msgs.scrollTop = msgs.scrollHeight;
+      setTimeout(tick, 25);
+    }
+  }
+  tick();
+}
+
+function addUserMsg(text) {
+  const d = document.createElement('div');
+  d.className = 'ec-msg-user';
+  d.innerHTML = '<div class="ec-text">' + text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/\n/g,'<br>') + '</div>';
+  msgs.appendChild(d);
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+function showTyping() {
+  const d = document.createElement('div');
+  d.id = 'typing-ind';
+  d.className = 'ec-msg-bot';
+  d.innerHTML = '<div class="ec-typing">sintiendo...</div>';
+  msgs.appendChild(d);
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+function typeResponse(text) {
+  const lines = text.split('\n');
+  let currentLabel = null;
+  let currentBody = '';
+  const sections = [];
+  for (const line of lines) {
+    const t = line.trim();
+    if (labels[t]) {
+      if (currentLabel) sections.push({label: currentLabel, body: currentBody.trim()});
+      currentLabel = t;
+      currentBody = '';
+    } else if (currentLabel) {
+      currentBody += line + '\n';
+    }
+  }
+  if (currentLabel) sections.push({label: currentLabel, body: currentBody.trim()});
+
+  const wrap = document.createElement('div');
+  wrap.className = 'ec-msg-bot';
+  msgs.appendChild(wrap);
+
+  let sIdx = 0;
+  function typeSection() {
+    if (sIdx >= sections.length) {
+      document.getElementById('closer').style.display = 'block';
+      msgs.scrollTop = msgs.scrollHeight;
+      return;
+    }
+    const sec = sections[sIdx++];
+    const info = labels[sec.label];
+    const labelEl = document.createElement('div');
+    labelEl.className = 'ec-layer-label ' + info.cls;
+    labelEl.textContent = info.sym + ' ' + sec.label;
+    wrap.appendChild(labelEl);
+    const bodyEl = document.createElement('div');
+    bodyEl.className = 'ec-layer-body';
+    wrap.appendChild(bodyEl);
+    let i = 0;
+    function tick() {
+      if (i < sec.body.length) {
+        bodyEl.textContent += sec.body[i++];
+        msgs.scrollTop = msgs.scrollHeight;
+        setTimeout(tick, 20);
+      } else {
+        setTimeout(typeSection, 350);
+      }
+    }
+    setTimeout(tick, 250);
+  }
+  typeSection();
+}
+
+async function sendMsg() {
+  const text = inp.value.trim();
+  if (!text) return;
+  inp.value = ''; inp.style.height = 'auto';
+  btn.disabled = true;
+  document.getElementById('closer').style.display = 'none';
+  addUserMsg(text);
+  history.push({role:'user', content: text});
+  showTyping();
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method:'POST',
+      headers:{
+        'Content-Type':'application/json',
+        'x-api-key': API_KEY,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-allow-browser': 'true'
+      },
+      body: JSON.stringify({
+        model:'claude-sonnet-4-20250514',
+        max_tokens:1000,
+        system: SYSTEM,
+        messages: history
+      })
+    });
+    const data = await res.json();
+    const reply = data.content?.map(b => b.text||'').join('') || 'No pude decodificar. Intenta de nuevo.';
+    history.push({role:'assistant', content: reply});
+    document.getElementById('typing-ind')?.remove();
+    typeResponse(reply);
+  } catch(e) {
+    document.getElementById('typing-ind')?.remove();
+    const d = document.createElement('div');
+    d.className = 'ec-msg-bot';
+    d.innerHTML = '<div class="ec-text" style="color:#333">conexión interrumpida. respira. intenta de nuevo.</div>';
+    msgs.appendChild(d);
+  }
+  btn.disabled = false;
+  inp.focus();
+}
+</script>
+</body>
+</html>
